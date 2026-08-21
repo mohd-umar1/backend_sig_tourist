@@ -88,4 +88,13 @@ public class LocationController {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
+    @GetMapping("/get-all-restricted-zone")
+    public ResponseEntity<List<Restricted_zone>> getAllRestrictedZone() {
+        List<Restricted_zone> zones = restrictedZoneRepo.findAll();
+        if(!zones.isEmpty()) {
+            return ResponseEntity.ok(zones);
+        }else{
+            return ResponseEntity.notFound().build();
+        }
+    }
 }
