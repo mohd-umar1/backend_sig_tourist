@@ -9,7 +9,6 @@ import org.springframework.boot.autoconfigure.web.WebProperties;
 @Entity
 @Data
 @AllArgsConstructor
-@NoArgsConstructor
 @Table(name ="Restricted_Zone")
 public class Restricted_zone {
     @Id
@@ -23,4 +22,14 @@ public class Restricted_zone {
     private Double latitude;
 
     private Double longitude;
+
+    public Restricted_zone() {
+
+    }
+    public Restricted_zone( String name, String description, Double latitude, Double longitude) {
+        this.name = name;
+        this.description = description;
+        this.latitude = latitude;
+        this.longitude = longitude;
+    }
 }

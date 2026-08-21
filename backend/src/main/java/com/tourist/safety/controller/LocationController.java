@@ -45,6 +45,21 @@ public class LocationController {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
+    @PostMapping("add-restricted-zone")
+    public ResponseEntity<?> addRestrictedZone(@RequestBody Map<String, Object> request) {
+       try {
+           Restricted_zone restricted_zone = new Restricted_zone(
+                   request.get("name").toString(),
+                   request.get("description").toString(),
+                   ((Number) request.get("latitude")).doubleValue(),
+                   ((Number) request.get("longitude")).doubleValue()
+           );
+           geoFenceService.addRestricted_zone(restricted_zone);
+           return ResponseEntity.ok(restricted_zone);
+       } catch (Exception e) {
+           return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+       }
+    }
     @PostMapping("/geofence")
     public ResponseEntity<?> geofence(@RequestBody Map<String, Object> request, Tourist tourist) {
         try{
@@ -53,10 +68,10 @@ public class LocationController {
             Double latitude = request.get("latitude") !=null? ((Number) request.get("latitude")).doubleValue():null;
             List<Restricted_zone> restrictedZones = restrictedZoneRepo.findAll();
             for(Restricted_zone restrictedZone : restrictedZones) {
-                if(geoFenceService.Check_transpass(restrictedZone,longitude,latitude)){
+                if(geoFenceService.Check_transpass(restrictedZone,latitude,longitude)){
                     incidentService.createIncident(
                             tourist_id,
-                            Incident.IncidentType.valueOf("GEO_FENCE_VIOLATION"),
+                            Incident.IncidentType.valueOf("GEOFENCE_VIOLATION"),
                             Incident.Severity.HIGH,
                             latitude,
                             longitude,
