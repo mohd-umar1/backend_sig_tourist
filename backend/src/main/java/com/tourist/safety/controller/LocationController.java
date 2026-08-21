@@ -1,10 +1,18 @@
 package com.tourist.safety.controller;
 
+import com.tourist.safety.entity.Incident;
+import com.tourist.safety.entity.Restricted_zone;
+import com.tourist.safety.entity.Tourist;
+import com.tourist.safety.repository.RestrictedZoneRepo;
+import com.tourist.safety.service.AuditService;
+import com.tourist.safety.service.GeoFenceService;
+import com.tourist.safety.service.IncidentService;
 import com.tourist.safety.service.LocationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -14,6 +22,15 @@ public class LocationController {
     
     @Autowired
     private LocationService locationService;
+
+    @Autowired
+    private GeoFenceService geoFenceService;
+
+    @Autowired
+    private RestrictedZoneRepo restrictedZoneRepo;
+
+    @Autowired
+    private IncidentService incidentService;
     
     @PostMapping("/check")
     public ResponseEntity<?> checkLocation(@RequestBody Map<String, Object> request) {
@@ -24,6 +41,34 @@ public class LocationController {
                 request.get("longitude") != null ? ((Number) request.get("longitude")).doubleValue() : null
             );
             return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+    @PostMapping("/geofence")
+    public ResponseEntity<?> geofence(@RequestBody Map<String, Object> request, Tourist tourist) {
+        try{
+            String tourist_id = (String)request.get("touristId");
+            Double longitude = request.get("longitude") != null ? ((Number) request.get("longitude")).doubleValue() : null;
+            Double latitude = request.get("latitude") !=null? ((Number) request.get("latitude")).doubleValue():null;
+            List<Restricted_zone> restrictedZones = restrictedZoneRepo.findAll();
+            for(Restricted_zone restrictedZone : restrictedZones) {
+                if(geoFenceService.Check_transpass(restrictedZone,longitude,latitude)){
+                    incidentService.createIncident(
+                            tourist_id,
+                            Incident.IncidentType.valueOf("GEO_FENCE_VIOLATION"),
+                            Incident.Severity.HIGH,
+                            latitude,
+                            longitude,
+                            "tourist has transpassed into restricted location"
+                    );
+                    return ResponseEntity.ok(Map.of("violation", true,
+                            "message", "Tourist entered a restricted zone"));
+                }
+            };
+            return  ResponseEntity.ok(Map.of("violation", false,
+                    "message", "Tourist not entered a restricted zone"));
+
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
